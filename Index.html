@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Orange Scientific Calculator</title>
+    <style>
+        :root {
+            --dark-grey: #2a2a2a;
+            --medium-grey: #3a3a3a;
+            --light-grey: #4a4a4a;
+            --orange: #ff7b25;
+            --light-orange: #ff9a56;
+            --white: #f5f5f5;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a;
+            color: var(--white);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .calculator {
+            background-color: var(--dark-grey);
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            padding: 25px;
+            width: 100%;
+            max-width: 320px;
+            transition: all 0.3s ease;
+        }
+        
+        .calculator:hover {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+        }
+        
+        .display {
+            background-color: var(--medium-grey);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: right;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .previous-operand {
+            font-size: 16px;
+            color: #aaa;
+            height: 20px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .current-operand {
+            font-size: 32px;
+            font-weight: 600;
+            color: var(--white);
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-gap: 10px;
+        }
+        
+        button {
+            border: none;
+            border-radius: 6px;
+            padding: 15px 0;
+            font-size: 18px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: var(--medium-grey);
+            color: var(--white);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .number {
+            background-color: var(--light-grey);
+        }
+        
+        .operator {
+            background-color: var(--orange);
+            color: white;
+        }
+        
+        .function {
+            background-color: var(--medium-grey);
+            color: var(--light-orange);
+        }
+        
+        .equals {
+            background-color: var(--orange);
+            color: white;
+            grid-column: span 2;
+        }
+        
+        .clear, .delete {
+            background-color: #333;
+            color: var(--light-orange);
+        }
+        
+        .span-2 {
+            grid-column: span 2;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display">
+            <div class="previous-operand" id="previous-operand"></div>
+            <div class="current-operand" id="current-operand">0</div>
+        </div>
+        
+        <div class="buttons-grid">
+            <button class="function" onclick="calculate('sin(')">sin</button>
+            <button class="function" onclick="calculate('cos(')">cos</button>
+            <button class="function" onclick="calculate('tan(')">tan</button>
+            <button class="function" onclick="calculate('sqrt(')">√</button>
+            <button class="clear" onclick="clearAll()">AC</button>
+            
+            <button class="function" onclick="calculate('π')">π</button>
+            <button class="function" onclick="calculate('e')">e</button>
+            <button class="function" onclick="calculate('^')">^</button>
+            <button class="function" onclick="calculate('(')">(</button>
+            <button class="function" onclick="calculate(')')">)</button>
+            
+            <button class="number" onclick="appendNumber('7')">7</button>
+            <button class="number" onclick="appendNumber('8')">8</button>
+            <button class="number" onclick="appendNumber('9')">9</button>
+            <button class="delete" onclick="deleteLastChar()">DEL</button>
+            <button class="operator" onclick="appendOperator('/')">÷</button>
+            
+            <button class="number" onclick="appendNumber('4')">4</button>
+            <button class="number" onclick="appendNumber('5')">5</button>
+            <button class="number" onclick="appendNumber('6')">6</button>
+            <button class="operator" onclick="appendOperator('*')">×</button>
+            <button class="operator" onclick="appendOperator('%')">%</button>
+            
+            <button class="number" onclick="appendNumber('1')">1</button>
+            <button class="number" onclick="appendNumber('2')">2</button>
+            <button class="number" onclick="appendNumber('3')">3</button>
+            <button class="operator" onclick="appendOperator('-')">-</button>
+            <button class="function" onclick="calculate('log(')">log</button>
+            
+            <button class="number" onclick="appendNumber('0')">0</button>
+            <button class="number" onclick="appendNumber('.')">.</button>
+            <button class="equals" onclick="compute()">=</button>
+            <button class="operator" onclick="appendOperator('+')">+</button>
+            <button class="function" onclick="calculate('ln(')">ln</button>
+        </div>
+    </div>
+
+    <script>
+        // Calculator state
+        let currentOperand = '0';
+        let previousOperand = '';
+        let operation = undefined;
+        let resetScreen = false;
+        
+        // DOM elements
+        const currentOperandElement = document.getElementById('current-operand');
+        const previousOperandElement = document.getElementById('previous-operand');
+        
+        // Helper functions
+        function updateDisplay() {
+            currentOperandElement.innerText = currentOperand;
+            previousOperandElement.innerText = previousOperand;
+        }
+        
+        function appendNumber(number) {
+            if (currentOperand === '0' || resetScreen) {
+                currentOperand = '';
+                resetScreen = false;
+            }
+            currentOperand += number;
+            updateDisplay();
+        }
+        
+        function appendOperator(operator) {
+            if (currentOperand === '') return;
+            if (previousOperand !== '') {
+                compute();
+            }
+            operation = operator;
+            previousOperand = `${currentOperand} ${operator}`;
+            currentOperand = '';
+            updateDisplay();
+        }
+        
+        function compute() {
+            let computation;
+            const prev = parseFloat(previousOperand);
+            const current = parseFloat(currentOperand);
+            
+            if (isNaN(prev) || isNaN(current)) return;
+            
+            switch (operation) {
+                case '+':
+                    computation = prev + current;
+                    break;
+                case '-':
+                    computation = prev - current;
+                    break;
+                case '*':
+                    computation = prev * current;
+                    break;
+                case '/':
+                    computation = prev / current;
+                    break;
+                case '%':
+                    computation = prev % current;
+                    break;
+                default:
+                    return;
+            }
+            
+            currentOperand = computation.toString();
+            operation = undefined;
+            previousOperand = '';
+            resetScreen = true;
+            updateDisplay();
+        }
+        
+        function clearAll() {
+            currentOperand = '0';
+            previousOperand = '';
+            operation = undefined;
+            updateDisplay();
+        }
+        
+        function deleteLastChar() {
+            if (currentOperand.length === 1) {
+                currentOperand = '0';
+            } else {
+                currentOperand = currentOperand.slice(0, -1);
+            }
+            updateDisplay();
+        }
+        
+        function calculate(func) {
+            if (func === 'π') {
+                currentOperand = Math.PI.toString();
+            } else if (func === 'e') {
+                currentOperand = Math.E.toString();
+            } else if (func === '^') {
+                appendOperator('^');
+            } else if (func === 'sqrt(') {
+                currentOperand = Math.sqrt(parseFloat(currentOperand)).toString();
+            } else if (func === 'sin(') {
+                currentOperand = Math.sin(parseFloat(currentOperand)).toString();
+            } else if (func === 'cos(') {
+                currentOperand = Math.cos(parseFloat(currentOperand)).toString();
+            } else if (func === 'tan(') {
+                currentOperand = Math.tan(parseFloat(currentOperand)).toString();
+            } else if (func === 'log(') {
+                currentOperand = Math.log10(parseFloat(currentOperand)).toString();
+            } else if (func === 'ln(') {
+                currentOperand = Math.log(parseFloat(currentOperand)).toString();
+            }
+            updateDisplay();
+        }
+        
+        // Initialize display
+        updateDisplay();
+    </script>
+</body>
+</html>
